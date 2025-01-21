@@ -1,0 +1,83 @@
+import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+from datetime import datetime
+
+# Replace with your OpenWeatherMap API key
+API_KEY = "your_api_key_here"
+BASE_URL = "https://api.openweathermap.org/data/3.0/onecall"
+
+# Function to fetch weather data
+def fetch_weather_data(lat, lon):
+    params = {
+        'lat': lat,
+        'lon': lon,
+        'exclude': 'minutely,alerts',
+        'appid': API_KEY,
+        'units': 'metric'  # Use metric units for temperature (Celsius)
+    }
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}, {response.text}")
+        return None
+
+# Function to process the weather data
+def process_weather_data(data):
+    hourly = data['hourly']
+    daily = data['daily']
+    processed_data = {
+        'datetime': [],
+        'temperature': [],
+        'humidity': [],
+        'weather': []
+    }
+
+    for entry in hourly:
+        processed_data['datetime'].append(datetime.fromtimestamp(entry['dt']))
+        processed_data['temperature'].append(entry['temp'])
+        processed_data['humidity'].append(entry['humidity'])
+        processed_data['weather'].append(entry['weather'][0]['description'])
+
+    return pd.DataFrame(processed_data)
+
+# Function to create visualizations
+def create_visualizations(df, location):
+    sns.set(style="whitegrid")
+
+    # Line plot for temperature trends
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x='datetime', y='temperature', data=df, marker="o", label="Temperature (°C)")
+    plt.xticks(rotation=45)
+    plt.title(f"Temperature Trend in {location}")
+    plt.xlabel("Date & Time")
+    plt.ylabel("Temperature (°C)")
+    plt.tight_layout()
+    plt.show()
+
+    # Bar plot for humidity
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x='datetime', y='humidity', data=df, color="skyblue")
+    plt.xticks(rotation=45)
+    plt.title(f"Humidity Levels in {location}")
+    plt.xlabel("Date & Time")
+    plt.ylabel("Humidity (%)")
+    plt.tight_layout()
+    plt.show()
+
+# Main function
+def main():
+    # Coordinates for Bengaluru, India
+    lat = 12.9716
+    lon = 77.5946
+    location = "Bengaluru, India"
+    
+    data = fetch_weather_data(lat, lon)
+    if data:
+        weather_df = process_weather_data(data)
+        create_visualizations(weather_df, location)
+
+if __name__ == "__main__":
+    main()
